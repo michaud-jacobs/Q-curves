@@ -1,5 +1,7 @@
 // This Magma code carries out the checks and computations for the paper 
-// Q-curves and the Lebesgue-Nagell equation
+// Q-curves and the Lebesgue-Nagell equation by Michael A. Bennett, Philippe Michaud-Jacobs, and Samir Siksek
+
+// The code runs on Magma V2.26-10
 
 q := 41; // Choose q = 17, 41, 89, or 97.
 M<rootq> := QuadraticField(q);
@@ -64,6 +66,42 @@ if q eq 97 then
    assert gamma*OM eq fac1;
    assert gammab*OM eq fac2;
 end if;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////  
+
+// We verify the computation that c(sigma, sigma) = -2.
+
+aff<A,w,wb,gam,gamb>:=AffineSpace(Rationals(),5);  // Here, A is q^{m+1}
+S:=Scheme(aff,[w+wb-A^2, gam*gamb+2]);
+FF:=FieldOfFractions(CoordinateRing(S));
+A:=FF!A;
+w:=FF!w;
+wb:=FF!wb;
+gam:=FF!gam;
+gamb:=FF!gamb;
+
+E := EllipticCurve( [ 0 , 2*gam*A , 0 , gam^2*w , 0 ]);
+Econj := EllipticCurve( [ 0 , 2*gamb*A, 0, gamb^2*wb , 0 ]);
+
+// We define the map phi_sigma
+_<x,y>:=FunctionField(Econj);
+phi := map<  Econj -> E | [ 	(x^2 + 2*gamb*A*x + gamb^2*wb)/(gamb^2*x), (x^2 -gamb^2*wb)*y/(gamb^3*x^2), 1] >;
+
+// We define the map sigma((phi_sigma))
+_<x,y>:=FunctionField(E);
+sigphi := map<  E -> Econj | [ 	(x^2 + 2*A*gam*x + gam^2*w)/(gam^2*x), (x^2 -gam^2*w)*y/(gam^3*x^2), 1] >;  
+
+// Want to evaluate phi circ sigma(phi).
+// This is sigma(phi) * phi in Magma notation!
+
+Phi:=sigphi*phi;
+assert Domain(Phi) eq E and Codomain(Phi) eq E;
+
+Theta:=map<E -> E | DefiningEquations(MultiplicationByMMap(E,-2))>;
+
+assert Phi eq Theta; // Therefore phi circ sigma(phi) = -2.
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////  
@@ -589,31 +627,35 @@ for pF in partialFails do
 end for;
 
 
+load "ThueMahlerSolver.m" // see the file ThueMahlerSolver.m included with this code
+// The latest version of this solver can be found at https://github.com/adelagherga/ThueMahler/tree/master/Code/TMSolver
+
+// We obtain the following equations from the 3 partial fails listed above:
+
 // pF 1
 
-139*X^7 - 1519*X^6*Y + 7119*X^5*Y^2 - 18515*X^4*Y^3 + 28945*X^3*Y^4 - 27069*X^2*Y^5 + 14133*X*Y^6 - 3137*Y^7;
-cfs := [ 139, -1519, 7119, -18515, 28945, -27069, 14133, -3137 ];  // no solutions
+// 139*X^7 - 1519*X^6*Y + 7119*X^5*Y^2 - 18515*X^4*Y^3 + 28945*X^3*Y^4 - 27069*X^2*Y^5 + 14133*X*Y^6 - 3137*Y^7
+cfs_1 := [ 139, -1519, 7119, -18515, 28945, -27069, 14133, -3137 ];  
+sols:=solveThueMahler(cfs_1,[17],1); 
+assert sols eq {}; // no solutions
 
+///////////////////////////
 
 // first equation for pF 2
 
--17*X^7 + 189*X^6*Y - 861*X^5*Y^2 + 2345*X^4*Y^3 - 3395*X^3*Y^4 + 3591*X^2*Y^5 -1519*X*Y^6 + 467*Y^7
-cfs := [ -17, 189, -861, 2345, -3395, 3591, -1519, 467 ];   // no solutions
+// -17*X^7 + 189*X^6*Y - 861*X^5*Y^2 + 2345*X^4*Y^3 - 3395*X^3*Y^4 + 3591*X^2*Y^5 -1519*X*Y^6 + 467*Y^7
+cfs_21 := [ -17, 189, -861, 2345, -3395, 3591, -1519, 467 ];  
+sols:=solveThueMahler(cfs_21,[17],1); 
+assert sols eq {}; // no solutions
+
+///////////////////////////
 
 // other equation for pF2
 
-cfs := [ -1, 189, -14637, 677705, -16679635, 299923911, -2156762783, 11272244723 ];  // sols := {[ -1, 0, 0 ]}
-// this leads to the solution (-71)^2 - 17 = 2^7
+cfs_22 := [ -1, 189, -14637, 677705, -16679635, 299923911, -2156762783, 11272244723 ]; 
+sols:=solveThueMahler(cfs_22,[17],1); 
+assert sols eq { [-1, 0, 0] };  // this leads to the solution (-71)^2 - 17 = 2^7
 
+///////////////////////////
 
-// pF 3, same as pF 1
-
-139*X^7 - 1519*X^6*Y + 7119*X^5*Y^2 - 18515*X^4*Y^3 + 28945*X^3*Y^4 - 27069*X^2*Y^5 + 14133*X*Y^6 - 3137*Y^7
-cfs := [ 139, -1519, 7119, -18515, 28945, -27069, 14133, -3137 ];  // no solutions
-
-
-load "ThueMahlerSolver.m" // see the file ThueMahlerSolver.m included with the code
-
-// Now test each sequence of coefficients.
-sols:=solveThueMahler(cfs,1,[17]); // This works on Magma V2.25-3, but may not work on certain later versions.
-
+// pF 3 is the same as pF 1, so no solutions.
